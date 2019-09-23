@@ -1,0 +1,5 @@
+Flask==1.1.1
+Werkzeug==0.15.5
+PyMySQL==0.9.3
+pandas==0.24.2
+flask_restplus==0.12.1
