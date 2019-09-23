@@ -1,6 +1,7 @@
 from ....models.mysql.jualan import JualanModel
 from ....models.mysql.stock import StockModel
 from ....models.mysql.no_bil import NoBilModel
+from ....models.mysql.emas_buruk import EmasBurukModel
 
 from datetime import datetime,date
 
@@ -8,10 +9,10 @@ class TransaksiJualanServices():
 
     def ProsesJualan(self,payloads):
         jualan = JualanModel()  
-        input_jualan = self.QueryInputJualan(payloads['item_jualan'], payloads['kakitangan_id'])
+        input_jualan = self.__QueryInputJualan(payloads['item_jualan'], payloads['kakitangan_id'])
         return input_jualan
 
-    def QueryInputJualan(self, input, staff_id):
+    def __QueryInputJualan(self, input, staff_id):
         jualan_model = JualanModel()
         stok_model = StockModel()
         nobil_model = NoBilModel()
@@ -45,4 +46,11 @@ class TransaksiJualanServices():
             }
             jualan_model.CreateJualan(jualan)
             jualan_model.CreateJualanStok(jualan)
+            self.__ProsesEmasBuruk(jualan)
         return True
+
+    def __ProsesEmasBuruk(self, payloads):
+        emasburuk_model = EmasBurukModel()
+        emasburuk_model.CreateEmasBuruk()
+        print('proses emas buruk')
+        pass
