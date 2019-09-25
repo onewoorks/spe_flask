@@ -3,6 +3,7 @@ from flask_restplus import Api
 from .stock import api as stock_api
 from .tetapan import api as tetapan_api
 from .transaksi import api as transaksi_api
+from .tempahan import api as tempahan_api
 
 api = Api(
     title="Sistem Pengurusan Emas API",
@@ -13,3 +14,4 @@ api = Api(
 api.add_namespace(stock_api)
 api.add_namespace(tetapan_api)
 api.add_namespace(transaksi_api)
+api.add_namespace(tempahan_api)
