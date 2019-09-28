@@ -5,6 +5,9 @@ from ....models.mysql.emas_buruk import EmasBurukModel
 
 from ...umum.kiraan import UmumKiraanServices
 
+from ...stock.emas_buruk import EmasBurukServices
+from ...transaksi.aliran_wang import TransaksiAliranWangServices
+
 from datetime import datetime,date
 
 umum = UmumKiraanServices()
@@ -18,19 +21,25 @@ class TransaksiJualanServices():
     4. tbl_cengkeram - update sekiranya jualan dibayar dengan cengkeram
     5. tbl_alirawang - rekod transaksi aliranwang
     """
-    def ProsesJualan(self,payloads):
+    def ProsesJualan(self, payloads):
         jualan = JualanModel()  
-        input_jualan = self.__QueryInputJualan(payloads['item_jualan'], payloads['kakitangan_id'])
+        tag             = payloads['tag']
+        staff_id        = payloads['kakitangan_id']
+        no_bil          = self.__NoBilJualan(tag)
+        input_jualan    = self.__QueryInputJualan(payloads['item_jualan'], staff_id ,tag, no_bil)
+        kaedah_bayaran  = self.__KaedahBayaran(payloads['kaedah_bayaran'], staff_id, tag, no_bil)
         return input_jualan
 
-    def __QueryInputJualan(self, input, staff_id):
+    def __NoBilJualan(self, tag):
+        no_resit_jualan = NoBilModel().ReadNobil('no_jualan',tag)
+        return no_resit_jualan
+
+    def __QueryInputJualan(self, input, staff_id, tag, no_resit_jualan):
         jualan_model = JualanModel()
         stok_model = StockModel()
-        nobil_model = NoBilModel()
         for i in range(len(input)):
             stok_detail = stok_model.ReadStockByTagNoRaw(input[i]['no_tag'], input[i]['tag'])
             modal = umum.KiraModalEmasStok(stok_detail)
-            no_resit_jualan = nobil_model.ReadNobil('no_jualan',stok_detail['tenant_id'])
             jualan = {
                 "stk_color"         : "",
                 "no_tag"            : "{}".format(input[i]['no_tag']),
@@ -82,6 +91,33 @@ class TransaksiJualanServices():
             "kod_cukai"         : 0,
             "rujukan"           : ""
         }
-        emasburuk_model = EmasBurukModel()
-        emasburuk_model.CreateEmasBuruk(payloads)
+        EmasBurukModel().CreateEmasBuruk(payloads)
         return True
+    
+    def __KaedahBayaran(self, payloads, staff_id, tag, no_bil):
+        payloads['id_kakitangan']   = staff_id
+        payloads['tag']             = tag
+        if payloads['tunai'] > 0:
+            self.__BayarTunai(payloads, no_bil)
+        if payloads['debit_kredit']['jumlah'] > 0 :
+            print('ini bayar guna kad')
+        if payloads['cengkeram']['nilai_tempahan'] > 0:
+            print('tolak cengekeram')
+        if payloads['trade_in'][0]['harga_emas'] > 0:
+            EmasBurukServices().EmasTradeIn(payloads['trade_in'], staff_id, tag)
+        pass
+
+    def __BayarTunai(self, payload, no_bil):
+        input = {
+            "jenis_transaksi"   : 3,
+            "id_kategori"       : 13,
+            "perkara"           : "({}) JUALAN STOK".format(no_bil),
+            "no_pelanggan"      : "",
+            "no_bil"            : no_bil,
+            "nilai"             : payload['tunai'],
+            "id_kakitangan"     : payload['id_kakitangan'],
+            "tag"               : payload['tag'],
+            "id_pelanggan"      : ""
+        }
+        TransaksiAliranWangServices().DaftarAliranWang(input)
+        
