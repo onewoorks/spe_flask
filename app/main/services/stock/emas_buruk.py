@@ -1,7 +1,5 @@
 from ...models.mysql.emas_buruk import EmasBurukModel
 
-from ..transaksi.aliran_wang import TransaksiAliranWangServices
-
 class EmasBurukServices():
     
     def __PayloadEmasBuruk(self, payloads):
@@ -24,15 +22,17 @@ class EmasBurukServices():
         return input
 
     def EmasTradeIn(self, payloads, id_kakitangan, tag):
-        print('trade in process')
+        jumlah_trade_in = 0
         for i in payloads:
             i['harga']          = i['harga_emas']
             i['id_kakitangan']  = id_kakitangan
             i['jenis']          = 1
             i['tag']            = tag
+            jumlah_trade_in     += i['harga_emas']
             EmasBurukModel().CreateEmasBuruk(self.__PayloadEmasBuruk(i))
-            # TransaksiAliranWangServices().DaftarAliranWang()
-        pass
+        return {
+            "jumlah_harga"  : jumlah_trade_in
+        }
 
     def DaftarEmasBuruk(self):
         print('proses emas buruk in')

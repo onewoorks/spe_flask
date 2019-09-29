@@ -1,16 +1,10 @@
-from ....models.mysql.jualan import JualanModel
-from ....models.mysql.stock import StockModel
-from ....models.mysql.no_bil import NoBilModel
-from ....models.mysql.emas_buruk import EmasBurukModel
-
-from ...umum.kiraan import UmumKiraanServices
-
-from ...stock.emas_buruk import EmasBurukServices
+from ....models.mysql import mysql_execute_bulk_query, JualanModel, StockModel, NoBilModel, EmasBurukModel, BayarKadModel
+from ...umum import UmumKiraanServices, UmumFormattingServices
 from ...transaksi.aliran_wang import TransaksiAliranWangServices
-
 from datetime import datetime,date
 
-umum = UmumKiraanServices()
+umum        = UmumKiraanServices()
+formatting = UmumFormattingServices()
 
 class TransaksiJualanServices():
 
@@ -23,11 +17,11 @@ class TransaksiJualanServices():
     """
     def ProsesJualan(self, payloads):
         jualan = JualanModel()  
-        tag             = payloads['tag']
-        staff_id        = payloads['kakitangan_id']
-        no_bil          = self.__NoBilJualan(tag)
-        input_jualan    = self.__QueryInputJualan(payloads['item_jualan'], staff_id ,tag, no_bil)
-        kaedah_bayaran  = self.__KaedahBayaran(payloads['kaedah_bayaran'], staff_id, tag, no_bil)
+        tag                         = payloads['tag']
+        staff_id                    = payloads['kakitangan_id']
+        no_bil                      = self.__NoBilJualan(tag)
+        input_jualan                = self.__QueryInputJualan(payloads['item_jualan'], staff_id ,tag, no_bil)
+        kaedah_bayaran              = self.__KaedahBayaran(payloads['kaedah_bayaran'], staff_id, tag, no_bil)
         return input_jualan
 
     def __NoBilJualan(self, tag):
@@ -96,28 +90,15 @@ class TransaksiJualanServices():
     
     def __KaedahBayaran(self, payloads, staff_id, tag, no_bil):
         payloads['id_kakitangan']   = staff_id
+        taw                         = TransaksiAliranWangServices()
         payloads['tag']             = tag
+        sql_statement               = ""
         if payloads['tunai'] > 0:
-            self.__BayarTunai(payloads, no_bil)
+            sql_statement   += taw.BayarTunai(payloads, no_bil)
         if payloads['debit_kredit']['jumlah'] > 0 :
-            print('ini bayar guna kad')
+            sql_statement   += taw.BayarDebitKredit(payloads['debit_kredit'], no_bil, staff_id, tag)
         if payloads['cengkeram']['nilai_tempahan'] > 0:
-            print('tolak cengekeram')
+            sql_statement   += taw.BayarCengkeram(payloads['cengkeram'], no_bil, staff_id, tag)
         if payloads['trade_in'][0]['harga_emas'] > 0:
-            EmasBurukServices().EmasTradeIn(payloads['trade_in'], staff_id, tag)
-        pass
-
-    def __BayarTunai(self, payload, no_bil):
-        input = {
-            "jenis_transaksi"   : 3,
-            "id_kategori"       : 13,
-            "perkara"           : "({}) JUALAN STOK".format(no_bil),
-            "no_pelanggan"      : "",
-            "no_bil"            : no_bil,
-            "nilai"             : payload['tunai'],
-            "id_kakitangan"     : payload['id_kakitangan'],
-            "tag"               : payload['tag'],
-            "id_pelanggan"      : ""
-        }
-        TransaksiAliranWangServices().DaftarAliranWang(input)
-        
+            sql_statement   += taw.EmasTradeIn(payloads['trade_in'], no_bil, staff_id, tag)
+        mysql_execute_bulk_query(sql_statement)

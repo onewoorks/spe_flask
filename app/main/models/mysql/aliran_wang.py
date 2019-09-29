@@ -1,6 +1,8 @@
+from ...models import mysql_execute_query
+
 class AliranWangModel:
 
-    def CreateAliranWang(self, payload):
+    def CreateAliranWang(self, payload, bulk_to = False):
         query = "INSERT INTO tbl_aliranwang ("
         query += "aw_type, aw_cat, aw_perkara,"
         query += "aw_kp, aw_nobil, aw_value, "
@@ -14,6 +16,6 @@ class AliranWangModel:
         query += "{},".format(payload['id_kakitangan'])
         query += "{},".format(payload['tag'])
         query += "{}".format(payload['id_pelanggan'] if payload['id_pelanggan'] != '' else "NULL" )
-        query += ")"
-        print('----TUNAI----')
-        print(query)
+        query += "); "
+        return mysql_execute_query(query) if bulk_to == False else query
+        

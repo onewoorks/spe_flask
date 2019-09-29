@@ -5,7 +5,7 @@ from ...services.umum.formatting import UmumFormattingServices
 umum = UmumFormattingServices()
 class EmasBurukModel():
 
-    def CreateEmasBuruk(self, payloads):
+    def CreateEmasBuruk(self, payloads, bulk_to = False):
         query = "INSERT INTO tbl_emasburuk ("\
             "emb_tag, eb_jenis, emb_date,"\
             "emb_weight, emb_price, cat_id,"\
@@ -28,7 +28,5 @@ class EmasBurukModel():
         query += "{},".format(umum.FixedNumber(payloads['nilai_cukai']))
         query += "{},".format(payloads['kod_cukai'])
         query += "'{}'".format(payloads['rujukan'])
-        query += ")"
-        print('insert new emas buruk')
-        print(query)
-        return 
+        query += "); "
+        return mysql_insert_query(query) if bulk_to == False else query

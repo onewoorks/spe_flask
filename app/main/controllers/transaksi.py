@@ -31,11 +31,13 @@ maklumat_pelanggan = api.model('Maklumat Pelanggan', {
 debit_kredit = api.model('Bayaran Debit Kredit',{
     "jenis_bayaran" : fields.String(),
     "no_transaksi"  : fields.String(),
-    "jumlah"        : fields.Float()
+    "jumlah"        : fields.Float(),
+    "faedah"        : fields.Float(),
+    "jenis"         : fields.Integer()
 })
 
 cengkeram   = api.model('Maklumat Cengekera', {
-    "no_resit_tempahan "    : fields.String(description = "No resit tempahan"),
+    "no_resit_tempahan"     : fields.String(description = "No resit tempahan"),
     "nilai_tempahan"        : fields.Float()
 })
 
