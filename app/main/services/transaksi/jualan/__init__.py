@@ -1,4 +1,4 @@
-from ....models.mysql import mysql_execute_bulk_query, JualanModel, StockModel, NoBilModel, EmasBurukModel, BayarKadModel
+from ....models.mysql import JualanModel, StockModel, NoBilModel, EmasBurukModel, BayarKadModel, multiple_insert_query
 from ...umum import UmumKiraanServices, UmumFormattingServices
 from ...transaksi.aliran_wang import TransaksiAliranWangServices
 from datetime import datetime,date
@@ -22,15 +22,20 @@ class TransaksiJualanServices():
         no_bil                      = self.__NoBilJualan(tag)
         input_jualan                = self.__QueryInputJualan(payloads['item_jualan'], staff_id ,tag, no_bil)
         kaedah_bayaran              = self.__KaedahBayaran(payloads['kaedah_bayaran'], staff_id, tag, no_bil)
-        return input_jualan
+        multiple_insert_statement   = input_jualan + kaedah_bayaran
+        multiple_insert_query(multiple_insert_statement)
 
     def __NoBilJualan(self, tag):
-        no_resit_jualan = NoBilModel().ReadNobil('no_jualan',tag)
+        nobil = NoBilModel()
+        no_resit_jualan = nobil.ReadNobil('no_jualan',tag)
+        no_resit_jualan += 1
+        nobil.UpdateNobil('no_jualan', no_resit_jualan, tag)
         return no_resit_jualan
 
     def __QueryInputJualan(self, input, staff_id, tag, no_resit_jualan):
         jualan_model = JualanModel()
         stok_model = StockModel()
+        sql_statement = ""
         for i in range(len(input)):
             stok_detail = stok_model.ReadStockByTagNoRaw(input[i]['no_tag'], input[i]['tag'])
             modal = umum.KiraModalEmasStok(stok_detail)
@@ -61,11 +66,11 @@ class TransaksiJualanServices():
                 "stok_asal"         : stok_detail,
                 "modal_segram"      : modal['segram']
             }
-            jualan_model.CreateJualan(jualan)       #tbl_stock_purchase
-            jualan_model.CreateJualanStok(jualan)   #tbl_purchases
+            sql_statement += jualan_model.CreateJualan(jualan, bulk_to = True)       #tbl_stock_purchase
+            sql_statement += jualan_model.CreateJualanStok(jualan, bulk_to = True)   #tbl_purchases
             if jualan['baki_berat'] > 0 : 
-                self.__ProsesEmasBuruk(jualan)
-        return True
+                sql_statement += self.__ProsesEmasBuruk(jualan)
+        return sql_statement
 
     def __ProsesEmasBuruk(self,payloads):
         harga = payloads['modal']
@@ -85,8 +90,8 @@ class TransaksiJualanServices():
             "kod_cukai"         : 0,
             "rujukan"           : ""
         }
-        EmasBurukModel().CreateEmasBuruk(payloads)
-        return True
+        sql_statement = EmasBurukModel().CreateEmasBuruk(payloads, bulk_to = True)
+        return sql_statement
     
     def __KaedahBayaran(self, payloads, staff_id, tag, no_bil):
         payloads['id_kakitangan']   = staff_id
@@ -101,4 +106,4 @@ class TransaksiJualanServices():
             sql_statement   += taw.BayarCengkeram(payloads['cengkeram'], no_bil, staff_id, tag)
         if payloads['trade_in'][0]['harga_emas'] > 0:
             sql_statement   += taw.EmasTradeIn(payloads['trade_in'], no_bil, staff_id, tag)
-        mysql_execute_bulk_query(sql_statement)
+        return sql_statement

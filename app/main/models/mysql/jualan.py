@@ -2,7 +2,7 @@ from .. import mysql_execute_query, mysql_insert_query
 
 class JualanModel():
 
-    def CreateJualan(self,input):
+    def CreateJualan(self,input, bulk_to = False):
         query = "INSERT INTO tbl_stock_purchase ("
         query += "stk_color, stk_tag, stk_register, "
         query += "stk_name, cat_id, dlg_id, stk_weight, "
@@ -25,12 +25,10 @@ class JualanModel():
         query += "{},".format(input['harga_emas_segram'])
         query += "{},".format(input['tag'])
         query += "{}".format(input['kod_cukai'])
-        query += ");"
-        print(query)
-        # execute = mysql_insert_query(query)
-        pass
+        query += "); "
+        return mysql_insert_query(query) if bulk_to == False else query
 
-    def CreateJualanStok(self, input):
+    def CreateJualanStok(self, input, bulk_to = False):
         query = "INSERT INTO tbl_purchase ("
         query += "pch_tag, cat_id, pch_name, "
         query += "pch_date, pch_price, pch_modal, "
@@ -61,5 +59,4 @@ class JualanModel():
         query += "{},".format(input['tag'])
         query += "{}".format(input['kod_cukai'])
         query += ");"
-        print(query)
-        return query
+        return mysql_insert_query(query) if bulk_to == False else query
