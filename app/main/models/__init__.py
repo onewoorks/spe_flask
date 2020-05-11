@@ -17,8 +17,11 @@ def mysql_execute_query(query):
         cursorclass=pymysql.cursors.DictCursor,
         autocommit = True)
     cursor = db.cursor()
-    cursor.execute(query)
-    data = cursor.fetchall()
+    no_of_rows = cursor.execute(query)
+    if no_of_rows > 0:
+        data = cursor.fetchall()
+    else :
+        data = False
     return data
 
 

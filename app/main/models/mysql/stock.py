@@ -1,8 +1,10 @@
 from .. import mysql_execute_query
+import json
 
 class StockModel():
-    def ReadStockByTagNo(self, tag_no):
+    def read_stock_by_tagn_o(self, tag_no):
         query = "SELECT "
+        query += "s.stk_id as id, "
         query += "s.stk_tag as no_tag, "
         query += "DATE_FORMAT(s.stk_register,'%d %M %Y') as tarikh_daftar, "
         query += "s.stk_name as nama_stok, "
@@ -21,9 +23,15 @@ class StockModel():
         response = mysql_execute_query(query)
         return response
     
-    def ReadStockByTagNoRaw(self, tag_no, tag):
+    def read_stock_by_tag_no_raw(self, tag_no, tag):
         query = "SELECT * FROM tbl_stock "
         query += "WHERE "
         query += "stk_tag = '{}' ".format(int(tag_no))
         query += "AND tenant_id= '{}'".format(int(tag))
         return mysql_execute_query(query)[0]
+
+    def update_data_attribute_stock(self, stk_id, tag_no, data_attribute):
+        query = "UPDATE `tbl_stock` SET `data_attribute` = '{}' ".format(json.dumps(data_attribute))
+        query += "WHERE stk_tag = '{}' AND `stk_id`='{}'".format(int(tag_no), int(stk_id))
+        mysql_execute_query(query)
+
